@@ -5,7 +5,7 @@ Module to build an object exposing:
  - a jsonRPC2 method attacher.
 
 Usage:
-
+```
 var jsonRPC2 = new (require('server.js'))(),
     httpServer = require('http').createServer( jsonRPC2.handle );
     
@@ -31,3 +31,4 @@ jsonrpcServer.exposeMethod(
 
 // Configuring HTTP Server
 httpServer.listen( c.port );
+```
