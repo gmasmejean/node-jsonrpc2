@@ -42,11 +42,11 @@ server.prototype.config = {
 server.prototype.handle = function( request, response ){
     if( this.config.http_methods.indexOf(request.method) !== 1 ){
         if( this.config.hasAuthorization && !this.config.hasAuthorization(request).bind(this) ){
-            this.handleError( request, response, error(E.NOT_AUTHORIZED) );
+            this.sendResponse( request, response, error(E.NOT_AUTHORIZED) );
         }
         this.handleRequest( request, response);
     }else{
-        this.handleError( request, response, error(E.HTTP_METHOD_NOT_ALLOWED) );
+        this.sendResponse( request, response, error(E.HTTP_METHOD_NOT_ALLOWED) );
     }
 };
 
