@@ -91,11 +91,11 @@ server.prototype.process = function( buffer, callback ){
         return callback( error(E.INVALID_PARAMS,rpcRequest.id) );
     }
     
-    this.methods[rpcRequest.method].callback( rpcRequest.params, function(err,result){ 
+    this.methods[rpcRequest.method].callback( rpcRequest.params, function(err,res){ 
         if( err ){
             return callback( error(err,rpcRequest.id) );
         }else{
-            return callback( result(result,rpcRequest.id) );
+            return callback( result(res,rpcRequest.id) );
         }
     });
 };
@@ -123,7 +123,7 @@ server.prototype.checkParameter = function( rules, param ){
         }else{
             return !Object.keys(rules.value).some(function(k){
                 return !this.checkParameter(rules.value[k], param[k]);
-            });
+            }.bind(this));
         }
     }
     return true;
