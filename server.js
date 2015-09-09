@@ -2,15 +2,15 @@
 // JSONRPC2 ERRORS.
 var E = {
     // STANDARD ERRORS
-    'PARSE_ERROR':{code:-32700,message:'Parse error',data:'An error occurred on the server while parsing the JSON text.'},
-    'INVALID_REQUEST':{code:-32600,message:'Invalid Request',data:'The JSON sent is not a valid request object.'},
-    'METHOD_NOT_FOUND':{code:-32601,message:'Method not found',data:'This method not exist/not available.'},
-    'INVALID_PARAMS':{code:-32602,message:'Invalid params',data:'Invalid method parameters'},
-    'INTERNAL_ERROR':{code:-32603,message:'Internal error',data:'Internal JSON-RPC error'},    
+    PARSE_ERROR:{code:-32700,message:'Parse error',data:'An error occurred on the server while parsing the JSON text.'},
+    INVALID_REQUEST:{code:-32600,message:'Invalid Request',data:'The JSON sent is not a valid request object.'},
+    METHOD_NOT_FOUND:{code:-32601,message:'Method not found',data:'This method not exist/not available.'},
+    INVALID_PARAMS:{code:-32602,message:'Invalid params',data:'Invalid method parameters'},
+    INTERNAL_ERROR:{code:-32603,message:'Internal error',data:'Internal JSON-RPC error'},    
     // SPECIFIC ERRORS:
-    'HTTP_METHOD_NOT_ALLOWED':{code:-32099,message:'Server error',data:'This HTTP Method is not allowed.'},
-    'UNCAUGHT_ERROR':{code:-32098,message:'Server error',data:'Uncaught Error...'},
-    'NOT_AUTHORIZED':{code:-32097,message:'Server error',data:'Not authorized'}
+    HTTP_METHOD_NOT_ALLOWED:{code:-32099,message:'Server error',data:'This HTTP Method is not allowed.'},
+    UNCAUGHT_ERROR:{code:-32098,message:'Server error',data:'Uncaught Error...'},
+    NOT_AUTHORIZED:{code:-32097,message:'Server error',data:'Not authorized'}
 };
 
 var ucfirst = function(s){ return s[0].toUpperCase()+s.slice(1); };
@@ -33,6 +33,8 @@ var server = function(config){
     this.config = extend({},this.config,config);
     this.handle = this.handle.bind(this);
 };
+
+server.prototype.errors = E;
 
 server.prototype.config = {
     http_methods:['POST'],
