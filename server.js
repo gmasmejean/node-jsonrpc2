@@ -57,8 +57,9 @@ server.prototype.sendResponse = function( request, response, out){
         header = extend({'Content-Type':'application/json','Content-Length':output.length},this.config.headers);
     
     response.writeHead(200,header);
-    response.write(output);
-    response.end();
+    response.write(output, function(){
+        response.end();
+    });
 };
 
 server.prototype.handleRequest = function( request, response){
