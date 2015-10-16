@@ -2,7 +2,7 @@
 
 Module to build an object exposing:
  - a node http server handler method.
- - a jsonRPC2 method attacher.
+ - a jsonRPC2 method handler.
 
 Usage:
 ```
