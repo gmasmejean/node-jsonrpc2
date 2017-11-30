@@ -6,7 +6,7 @@ var E = {
     INVALID_REQUEST:{code:-32600,message:'Invalid Request',data:'The JSON sent is not a valid request object.'},
     METHOD_NOT_FOUND:{code:-32601,message:'Method not found',data:'This method not exist/not available.'},
     INVALID_PARAMS:{code:-32602,message:'Invalid params',data:'Invalid method parameters'},
-    INTERNAL_ERROR:{code:-32603,message:'Internal error',data:'Internal JSON-RPC error'},    
+    INTERNAL_ERROR:{code:-32603,message:'Internal error',data:'Internal JSON-RPC error'},
     // SPECIFIC ERRORS:
     HTTP_METHOD_NOT_ALLOWED:{code:-32099,message:'Server error',data:'This HTTP Method is not allowed.'},
     UNCAUGHT_ERROR:{code:-32098,message:'Server error',data:'Uncaught Error...'},
@@ -14,11 +14,6 @@ var E = {
 };
 
 var ucfirst = function(s){ return s[0].toUpperCase()+s.slice(1); };
-
-var extend = function( a, b){
-    Object.keys(b).forEach(function(k){ a[k] = b[k]; });
-    return a;
-};
 
 var error = function( err, id, data ){
     return {jsonrpc:"2.0",error:{code:err.code,message:err.message,data:data||err.data},id:id||null};
@@ -30,7 +25,7 @@ var result = function( result, id ){
 
 var server = function(config){
     this.methods = {};
-    this.config = extend({},this.config,config);
+    this.config = Object.assign({},this.config,config);
     this.handle = this.handle.bind(this);
 };
 
@@ -42,21 +37,45 @@ server.prototype.config = {
 };
 
 server.prototype.handle = function( request, response ){
-    if( this.config.http_methods.indexOf(request.method) !== 1 ){
-        if( this.config.hasAuthorization && !this.config.hasAuthorization(request).bind(this) ){
+    if( request.method === 'HEAD' ){
+        response.writeHead(200,this.getHeaders( request ));
+        response.end();
+    }else if( this.config.http_methods.indexOf(request.method) !== 1 ){
+        if( this.config.hasAuthorization && !this.config.hasAuthorization.bind(this)(request) ){
             this.sendResponse( request, response, error(E.NOT_AUTHORIZED) );
+        }else{
+            this.handleRequest( request, response);
         }
-        this.handleRequest( request, response);
     }else{
         this.sendResponse( request, response, error(E.HTTP_METHOD_NOT_ALLOWED) );
     }
 };
 
+server.prototype.getHeaders = function( request, output ){
+    var headers = {'Content-Type':'application/json'};
+    // Set Content Length if there is an output.
+    if( output ){
+        headers['Content-Length'] = output.length;
+    }
+    // Set customs headers
+    if( this.config.headers ){
+        Object.keys(this.config.headers).forEach(function( headerKey ){
+            if( typeof this.config.headers[headerKey] === 'function' ){
+                headers[headerKey] = this.config.headers[headerKey]( request );
+            }else{
+                let headerValue = this.config.headers[headerKey];
+                if( headerValue ){
+                    headers[headerKey] = headerValue;
+                }
+            }
+        }.bind(this));
+    }
+    return headers;
+};
+
 server.prototype.sendResponse = function( request, response, out){
-    var output = JSON.stringify(out),
-        header = extend({'Content-Type':'application/json','Content-Length':output.length},this.config.headers);
-    
-    response.writeHead(200,header);
+    var output = JSON.stringify(out);
+    response.writeHead(200, this.getHeaders( request, output));
     response.write(output, function(){
         response.end();
     });
@@ -64,7 +83,6 @@ server.prototype.sendResponse = function( request, response, out){
 
 server.prototype.handleRequest = function( request, response){
     var buffer='';
-    
     request.setEncoding('utf8');
     request.on('data', function(chunk){ buffer += chunk; });
     request.on('end', function() {
@@ -72,29 +90,29 @@ server.prototype.handleRequest = function( request, response){
     }.bind(this));
 };
 
-server.prototype.process = function( buffer, callback ){    
+server.prototype.process = function( buffer, callback ){
     var rpcRequest;
     try{
         rpcRequest = JSON.parse(buffer);
     }catch( e ){
         callback( error(E.PARSE_ERROR) );
     }
-    
-    if( typeof rpcRequest !== 'object' || !rpcRequest.method 
+
+    if( typeof rpcRequest !== 'object' || !rpcRequest.method
         || typeof rpcRequest.method !== 'string' || rpcRequest.jsonrpc !== '2.0' ){
         return callback( error(E.INVALID_REQUEST) );
     }
-    
+
     if( !this.methods[ rpcRequest.method ]  ){
         return callback( error(E.METHOD_NOT_FOUND,rpcRequest.id) );
     }
-    
-    if( this.methods[rpcRequest.method].params 
+
+    if( this.methods[rpcRequest.method].params
         && !this.checkParameter( this.methods[rpcRequest.method].params, rpcRequest.params ) ){
         return callback( error(E.INVALID_PARAMS,rpcRequest.id) );
     }
-    
-    this.methods[rpcRequest.method].callback( rpcRequest.params, function(err,res){ 
+
+    this.methods[rpcRequest.method].callback( rpcRequest.params, function(err,res){
         if( err ){
             return callback( error(err,rpcRequest.id) );
         }else{
@@ -111,14 +129,14 @@ server.prototype.checkParameter = function( rules, param ){
     if( param === undefined || param === null ){
         return !!rules.optional;
     }
-    
+
     if( typeof(rules.value) === 'string' ){
         if( this.getType(param) !== '[object '+ucfirst(rules.value)+']' )
             return false;
     }else{
         if( this.getType(param) !== this.getType(rules.value) )
             return false;
-        
+
         if( rules.value instanceof Array ){
             return !rules.value.some(function( v, i ){
                 return !this.checkParameter( v, param[i] );
