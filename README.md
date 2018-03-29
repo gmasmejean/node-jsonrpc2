@@ -12,7 +12,7 @@ var jsonRPC2 = new (require('server.js'))(),
 // Expose a method to JSONRPC Server ( method, callback, paramsDefinition )    
 jsonrpcServer.exposeMethod(
     'send.message',
-    function(params, next){
+    function(params, next, originalRequest ){
         // params contains jsonRPC2 request parameters
         ... Your stuff here ... 
         next( error, result );
