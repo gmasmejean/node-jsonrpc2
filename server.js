@@ -86,11 +86,11 @@ server.prototype.handleRequest = function( request, response){
     request.setEncoding('utf8');
     request.on('data', function(chunk){ buffer += chunk; });
     request.on('end', function() {
-        this.process(buffer, this.sendResponse.bind(this,request,response));
+        this.process(buffer, this.sendResponse.bind(this,request,response), request);
     }.bind(this));
 };
 
-server.prototype.process = function( buffer, callback ){
+server.prototype.process = function( buffer, callback, request ){
     var rpcRequest;
     try{
         rpcRequest = JSON.parse(buffer);
@@ -118,7 +118,7 @@ server.prototype.process = function( buffer, callback ){
         }else{
             return callback( result(res,rpcRequest.id) );
         }
-    });
+    }, request);
 };
 
 server.prototype.getType = function(o){
