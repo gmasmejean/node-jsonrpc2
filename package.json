@@ -1,6 +1,6 @@
 {
   "name": "node-jsonrpc2",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "node.js http(s) JSON-RPC 2.0 handler",
   "main": "server.js",
   "scripts": {
