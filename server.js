@@ -25,6 +25,7 @@ var result = function( result, id ){
 
 var server = function(config){
     this.methods = {};
+    this.methodsRequests = {};
     this.config = Object.assign({},this.config,config);
     this.handle = this.handle.bind(this);
 };
@@ -86,11 +87,11 @@ server.prototype.handleRequest = function( request, response){
     request.setEncoding('utf8');
     request.on('data', function(chunk){ buffer += chunk; });
     request.on('end', function() {
-        this.process(buffer, this.sendResponse.bind(this,request,response));
+        this.process(buffer, this.sendResponse.bind(this,request,response), request);
     }.bind(this));
 };
 
-server.prototype.process = function( buffer, callback ){
+server.prototype.process = function( buffer, callback, request ){
     var rpcRequest;
     try{
         rpcRequest = JSON.parse(buffer);
@@ -103,7 +104,7 @@ server.prototype.process = function( buffer, callback ){
         return callback( error(E.INVALID_REQUEST) );
     }
 
-    if( !this.methods[ rpcRequest.method ]  ){
+    if( !this.methods[ rpcRequest.method ]  && !this.methodsRequests[ rpcRequest.method ] ){
         return callback( error(E.METHOD_NOT_FOUND,rpcRequest.id) );
     }
 
@@ -112,13 +113,33 @@ server.prototype.process = function( buffer, callback ){
         return callback( error(E.INVALID_PARAMS,rpcRequest.id) );
     }
 
-    this.methods[rpcRequest.method].callback( rpcRequest.params, function(err,res){
-        if( err ){
-            return callback( error(err,rpcRequest.id) );
-        }else{
-            return callback( result(res,rpcRequest.id) );
+    if( !this.methodsRequests[ rpcRequest.method ] ){
+        if( this.methods[rpcRequest.method].params
+            && !this.checkParameter( this.methods[rpcRequest.method].params, rpcRequest.params ) ){
+            return callback( error(E.INVALID_PARAMS,rpcRequest.id) );
         }
-    });
+
+        this.methods[rpcRequest.method].callback( rpcRequest.params, function(err,res){
+            if( err ){
+                return callback( error(err,rpcRequest.id) );
+            }else{
+                return callback( result(res,rpcRequest.id) );
+            }
+        });
+    } else {
+        if( this.methodsRequests[rpcRequest.method].params
+            && !this.checkParameter( this.methodsRequests[rpcRequest.method].params, rpcRequest.params ) ){
+            return callback( error(E.INVALID_PARAMS,rpcRequest.id) );
+        }
+
+        this.methodsRequests[rpcRequest.method].callback( rpcRequest.params, function(err,res){
+            if( err ){
+                return callback( error(err,rpcRequest.id) );
+            }else{
+                return callback( result(res,rpcRequest.id) );
+            }
+        }, request);
+    }
 };
 
 server.prototype.getType = function(o){
@@ -157,5 +178,13 @@ server.prototype.exposeMethod = function( method, callback, params ){
         this.methods[ method ] = { callback:callback,params:params };
     }
 };
+
+server.prototype.exposeMethodRequest = function( method, callback, params ){
+    if( method && typeof method === 'string' && typeof callback === 'function' ){
+        if( params && this.getType(params)!=='[object Object]' )
+            return false;
+        this.methodsRequests[ method ] = { callback:callback,params:params };
+    }
+}
 
 module.exports = server;
