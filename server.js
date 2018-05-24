@@ -95,7 +95,7 @@ server.prototype.process = function( buffer, callback, request ){
     try{
         rpcRequest = JSON.parse(buffer);
     }catch( e ){
-        callback( error(E.PARSE_ERROR) );
+        return callback( error(E.PARSE_ERROR) );
     }
 
     if( typeof rpcRequest !== 'object' || !rpcRequest.method
